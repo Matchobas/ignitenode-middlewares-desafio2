@@ -10,19 +10,87 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+
+  const foundUser = users.find((user) => {
+    return user.username === username;
+  });
+
+  if (!foundUser) {
+    return response.status(404).status({error: 'This user doesn\'t exist'});
+  }
+
+  request.user = foundUser;
+
+  return next();
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const { user } = request;
+
+  if (user.pro) {
+    return next();
+  }
+
+  if (user.todos.length < 10) {
+    return next();
+  }
+
+  return response.status(403).json({error: 'User exceeded the normal plan limit'});
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+  const { id } = request.params;
+
+  const foundUser = users.find((user) => {
+    return user.username === username;
+  });
+
+  if (!foundUser) {
+    return response.status(404).status({error: 'This user doesn\'t exist'});
+  }
+
+  const validUuid = validate(id);
+
+  if (!validUuid) {
+    return response.status(400).json({error: 'The informed ID is not a valid uuid'});
+  }
+
+  const foundTodo = foundUser.todos.find((todo => {
+    return todo.id === id;
+  }));
+
+  if (!foundTodo) {
+    return response.status(404).json({error: 'The todo doesn\'t exist'});
+  }
+
+  request.todo = foundTodo;
+  request.user = foundUser;
+
+  return next();
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params;
+
+  const validUuid = validate(id);
+
+  if (!validUuid) {
+    response.status(400).json({error: 'The informed ID is not a valid uuid'});
+  }
+
+  const foundUser = users.find((user) => {
+    return user.id === id;
+  });
+
+  if (!foundUser) {
+    return response.status(404).status({error: 'This user doesn\'t exist'});
+  }
+
+  request.user = foundUser;
+
+  return next();
 }
 
 app.post('/users', (request, response) => {
